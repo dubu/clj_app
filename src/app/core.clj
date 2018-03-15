@@ -1,11 +1,11 @@
 (ns app.core
  (:gen-class)
  (:require [app.util :refer [bmi]])
- (:require [immutant.web :refer [run]] [compojure.core :refer [defroutes GET POST]])
+ ;(:require [immutant.web :refer [run]] [compojure.core :refer [defroutes GET POST]])
  (:require [ring.middleware.params :refer [wrap-params]])
  (:require [hiccup.core :refer [html]])
- (:require [conman.core :as conman]))
-
+ (:import [redis.clients.jedis Jedis])
+ (:require [conman.core :as conman] [immutant.web :refer [run]] [compojure.api.sweet :refer [api GET POST]] [ring.util.http-response :refer [ok]]))
 
 (def db (conman/connect! {:jdbc-url "jdbc:mysql://mail-node-alpha1.pg1.krane.9rum.cc/clojure?user=testuser&password=testpassword&serverTimezone=UTC"}))
 
@@ -39,33 +39,78 @@
 ;       (< bmi 18.5) "저체중"
 ;       :else "몰라")))
 
-(defroutes handler
-  (GET "/user/:id" [id]
-    (str "x" id))
 
-  (GET "/bmi/height/:height/weight/:weight" [height weight]
-     ;(str height weight))
-    (str  (bmi (Long/parseLong height) (Long/parseLong weight))))
+(def User
+ {:name String
+  :id Long})
 
-  (GET "/y" [id]
-     id)
+(def PayLoad
+    {:chatId Long
+     :authorId Long
+     :message String
+     :nickname String
+     :ldapId String
+     :type Long})
 
-  (GET "/msg" []
-      "home")
 
+(def handler
+  (api
+    {:swagger {:ui "/swagger-ui"
+              :spec "/swagger.json"}}
+     (GET "/" []
+      :summary "기본.."
+       (ok "ok"))
+     (GET "/add/:x/:y" []
+            :path-params [x :- Long
+                          y :- Long]
+            (ok {:result (+ x y)}))
+      (POST "/hello" []
+           :body [user User]
+           (ok {:message (str "Hello " (:name user))}))
+      (POST "/callback" []
+        :body [payload PayLoad]
+        (ok {:chatId (:chatId payload)
+             :messages (if (= "!헬로두부" (:message payload))
+                         ["두부만세"]
+                         [])})
+       (ok {:chatId (:chatId payload)
+            :messages (if (= 1 1)
+                        ["두부만세"]
+                        [])})
+                         )
+       ))
 
-  (GET "/form" []
-    (html [:form {:action "/form1" :method "GET"}]
-       [:div [:input {:type "text" :name "height"}]]
-       [:div [:input {:type "text" :name "weight"}]]
-       [:div [:input {:type "submit"}]]))
-
-  (GET "/form1" []
-        {:status 302 :headers {"Location" "/msg"} :body ""})
-     )
+; (defroutes handler
+;   (GET "/user/:id" [id]
+;     (str "x" id))
+;
+;   (GET "/bmi/height/:height/weight/:weight" [height weight]
+;      ;(str height weight))
+;     (str  (bmi (Long/parseLong height) (Long/parseLong weight))))
+;
+;   (GET "/y" [id]
+;      id)
+;
+;   (GET "/msg" []
+;       "home")
+;
+;
+;   (GET "/form" []
+;     (html [:form {:action "/form1" :method "GET"}]
+;        [:div [:input {:type "text" :name "height"}]]
+;        [:div [:input {:type "text" :name "weight"}]]
+;        [:div [:input {:type "submit"}]]))
+;
+;   (GET "/form1" []
+;         {:status 302 :headers {"Location" "/msg"} :body ""})
+;      )
 
 (defn -main [& args]
-    (run (wrap-params handler))
+    (run #(handler %) {:host "0.0.0.0"})
+    ; (let [jedis (Jedis. "localhost")]
+    ;   (.set jedis "foo11" "000000001")
+    ;   (.get jedis "foo11"))
+    ;(run (wrap-params handler))
     ;db
     ;(println (insert-comment {:user "dubu", :content "hi"}))
     ;(println (select-comment))

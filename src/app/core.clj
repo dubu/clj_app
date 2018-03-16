@@ -7,7 +7,7 @@
  (:import [redis.clients.jedis Jedis])
  (:require [conman.core :as conman] [immutant.web :refer [run]] [compojure.api.sweet :refer [api GET POST]] [ring.util.http-response :refer [ok]]))
 
-;(def db (conman/connect! {:jdbc-url "jdbc:mysql://mail-node-alpha1.pg1.krane.9rum.cc/clojure?user=testuser&password=testpassword&serverTimezone=UTC"}))
+;(def db (conman/connect! {:jdbc-url "jdbc:mysql://xx.xxx.cc/clojure?user=testuser&password=testpassword&serverTimezone=UTC"}))
 
 
 ;(conman/bind-connection db "query.sql")
